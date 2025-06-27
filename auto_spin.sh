@@ -16,7 +16,8 @@ for i in $(seq 1 "$COUNT"); do
 
   mkdir -p "$FOLDER"
   echo "[*] Starting container $CONTAINER_NAME with volume $FOLDER"
-  docker run --pull always -d --restart always --name "$CONTAINER_NAME" -v "$FOLDER":/app/cache -e OWNERS_ALLOWLIST=0x gr1dnetwork/circuit-node
+  docker run --pull always -d --restart unless-stopped --name "$CONTAINER_NAME" -v "$FOLDER":/app/cache -e OWNERS_ALLOWLIST=0x gr1dnetwork/circuit-node
+
 
 
   # Wait for the cache file to be created
