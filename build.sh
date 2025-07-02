@@ -4,8 +4,8 @@
 cat > Dockerfile <<EOF
 FROM eniocarboni/docker-ubuntu-systemd:jammy
 
-RUN apt-get update && \\
-    apt-get install -y docker.io && \\
+RUN apt-get update && \
+    apt-get install -y docker.io jq nano && \
     apt-get clean
 EOF
 
