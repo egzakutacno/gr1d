@@ -24,7 +24,7 @@ def create_container(name):
         "--restart=always",
         "-v", "/sys/fs/cgroup:/sys/fs/cgroup",
         "-d", IMAGE_NAME,
-        "/lib/systemd/systemd"  # ✅ This ensures systemd is PID 1
+        "/lib/systemd/systemd"
     ])
     if ret == 0:
         print(f"✅ Container {name} created")
@@ -44,7 +44,7 @@ def wait_for_inner_docker(container_name, timeout=30):
         time.sleep(1)
     return False
 
-def run_circuit_node(container_name):
+def run_circuit_node(container_name, holder_wallet):
     if not wait_for_inner_docker(container_name):
         print(f"❌ Docker not ready in {container_name}, skipping app start.")
         return
@@ -52,7 +52,10 @@ def run_circuit_node(container_name):
     cmd = (
         "mkdir -p ~/flohive && "
         "docker rm -f circuit-node >/dev/null 2>&1 || true && "
-        f"docker run --restart=always --name circuit-node --pull always -v ~/flohive:/app/cache {CIRCUIT_NODE_IMAGE} > /dev/null 2>&1 &"
+        f"docker run --restart=always --name circuit-node --pull always "
+        f"-v ~/flohive:/app/cache "
+        f"-e OWNERS_ALLOWLIST={holder_wallet} "
+        f"{CIRCUIT_NODE_IMAGE} > /dev/null 2>&1 &"
     )
     ret, _, err = run_cmd(["docker", "exec", container_name, "bash", "-c", cmd])
     if ret == 0:
@@ -98,6 +101,11 @@ def main():
         print("Prefix cannot be empty.")
         return
 
+    holder_wallet = input("Enter holder wallet address (for OWNERS_ALLOWLIST): ").strip()
+    if not holder_wallet:
+        print("Holder wallet address cannot be empty.")
+        return
+
     try:
         count = int(input("How many containers do you want to create? "))
         if count < 1:
@@ -113,7 +121,7 @@ def main():
         if created:
             print(f"⏳ Waiting 5 seconds for {name} to be ready...")
             time.sleep(5)
-        run_circuit_node(name)
+        run_circuit_node(name, holder_wallet)
 
     print("\n⏳ Waiting for JSON files to be created and collected...\n")
 
