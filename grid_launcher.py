@@ -10,6 +10,26 @@ def run_cmd(cmd):
     proc = subprocess.run(cmd, capture_output=True, text=True)
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
+def set_sysctl_inotify_limit():
+    conf_path = "/etc/sysctl.d/99-custom-settings.conf"
+    content = "fs.inotify.max_user_instances=10000\n"
+
+    os.makedirs("/etc/sysctl.d", exist_ok=True)
+
+    try:
+        with open(conf_path, "w") as f:
+            f.write(content)
+        print(f"✅ Wrote sysctl setting to {conf_path}")
+    except PermissionError:
+        print(f"❌ Permission denied writing to {conf_path}. Please run this script with sudo.")
+        return
+
+    ret, out, err = run_cmd(["sysctl", "-p", conf_path])
+    if ret == 0:
+        print("✅ sysctl setting applied successfully.")
+    else:
+        print(f"❌ Failed to apply sysctl setting: {err}")
+
 def container_exists(name):
     ret, out, _ = run_cmd(["docker", "ps", "-a", "-q", "-f", f"name=^{name}$"])
     return bool(out.strip())
@@ -96,6 +116,8 @@ def save_keys_to_file(prefix, count, results):
     print(f"\n💾 Saved keys to file: {filename}")
 
 def main():
+    set_sysctl_inotify_limit()
+
     prefix = input("Enter container name prefix (e.g. grid): ").strip()
     if not prefix:
         print("Prefix cannot be empty.")
